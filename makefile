@@ -19,17 +19,20 @@ LOADERTMP=loader_t.bin
 .PHONY: cartridge
 cartridge: $(LOADER)
 
+.PHONY: pgz
+pgz: $(BINARY).pgz
+
+$(BINARY).pgz: $(BINARY)
+	$(PYTHON) make_pgz.py $(BINARY)
 
 $(BINARY): *.asm
 	64tass --nostart -o $(BINARY) main.asm
 
 clean: 
 	$(RM) $(FORCE) $(BINARY)
+	$(RM) $(FORCE) $(BINARY).pgz
 	$(RM) $(FORCE) $(LOADER)
 	$(RM) $(FORCE) $(LOADERTMP)
-
-upload: $(BINARY).pgz
-	$(SUDO) python fnxmgr.zip --port $(PORT) --run-pgz $(BINARY).pgz
 
 
 $(LOADER): $(LOADERTMP) $(BINARY) 

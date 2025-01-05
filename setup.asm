@@ -26,53 +26,5 @@ mmu
 ; RAM expansion 
 ; 0x100000 - 0x13FFFF
 
-BANK =  $81
-
-TEMP_CHECK  .byte 0
-TEMP_CHECK2 .byte 0
-TEMP_MMU    .byte 0
-
-; carry is set if no RAM expansion is detected
-checkForRamExpansion
-    ; save current data at $A100
-    lda $A100
-    sta TEMP_CHECK
-
-    ; save MMU state
-    lda 13
-    sta TEMP_MMU
-
-    ; switch to upper memory
-    lda #BANK
-    sta 13
-
-    lda TEMP_CHECK
-    ; make sure value is different from the one at $A100
-    ina
-    sta TEMP_CHECK2
-    ; store in high memory
-    sta $A100
-    ; load from high memory
-    lda $A100    
-    cmp TEMP_CHECK2
-    bne _error
-
-    ; restore MMU state
-    lda TEMP_MMU    
-    sta 13
-
-    ; load from low memory
-    lda $A100
-    cmp TEMP_CHECK
-    bne _error2
-    clc
-    rts
-_error
-    ; restore MMU state
-    lda TEMP_MMU    
-    sta 13
-_error2
-    sec
-    rts
 
 .endnamespace
