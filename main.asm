@@ -82,11 +82,12 @@ Entry_t .struct  cmd, addr, txt, len
     reserved .fill 2
 .endstruct
 
-NUM_CHARS_ACCEPTED = 3
+NUM_CHARS_ACCEPTED = 4
 
 TXT_SNAKE .text "Snake: A simple clone of the game snake", $0d, $0d
 TXT_2048  .text "2048: The well known block shifting game", $0d, $0d
 TXT_15    .text "15 Puzzle: The original block shifting game", $0d, $0d
+TXT_LIFE  .text "Conway's game of life", $0d, $0d
 TXT_FCART .text "f. fcart: Program to write data to the flash cartridge", $0d, $0d
 TXT_EXIT  .text "x. Exit to BASIC"
 
@@ -94,6 +95,7 @@ REF_TABLE
 A .dstruct Entry_t, '1', SNAKE, TXT_SNAKE, len(TXT_SNAKE)
 B .dstruct Entry_t, '2', F2048, TXT_2048, len(TXT_2048)
 C .dstruct Entry_t, '3', F15, TXT_15, len(TXT_15)
+D .dstruct Entry_t, '4', LIFE, TXT_LIFE, len(TXT_LIFE)
 
 
 processKeyEvent
@@ -361,5 +363,6 @@ _restoreMMU
 SNAKE   .text "snake", $00
 F2048   .text "f256_2048", $00
 F15     .text "f256_15", $00
+LIFE    .text "f256_life", $00
 FCART   .text "fcart", $00
 FCCART  .text "fccart", $00
