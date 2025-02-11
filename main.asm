@@ -82,7 +82,7 @@ Entry_t .struct  cmd, addr, txt, len
     reserved .fill 2
 .endstruct
 
-NUM_CHARS_ACCEPTED = 4
+NUM_PROGS_FOUND .byte 4
 
 TXT_SNAKE .text "Snake: A simple clone of the game snake", $0d, $0d
 TXT_2048  .text "2048: The well known block shifting game", $0d, $0d
@@ -114,7 +114,7 @@ _checkCursor
     bne _checkDown
     inc CURRENT_ENTRY
     clc
-    lda #NUM_CHARS_ACCEPTED
+    lda NUM_PROGS_FOUND
     adc FCART_PRESENT
     ina
     cmp CURRENT_ENTRY
@@ -129,7 +129,7 @@ _checkDown
     dec CURRENT_ENTRY
     bpl _redraw2
     clc
-    lda #NUM_CHARS_ACCEPTED
+    lda NUM_PROGS_FOUND
     adc FCART_PRESENT
     sta CURRENT_ENTRY
 _redraw2
@@ -139,7 +139,7 @@ _checkStart
     cmp #CARRIAGE_RETURN
     bne _checkCallProgram
     clc
-    lda #NUM_CHARS_ACCEPTED
+    lda NUM_PROGS_FOUND
     adc FCART_PRESENT
     cmp CURRENT_ENTRY
     bne _notExit
@@ -148,7 +148,7 @@ _checkStart
 _notExit
     lda FCART_PRESENT
     beq _runEntry
-    lda #NUM_CHARS_ACCEPTED
+    lda NUM_PROGS_FOUND
     cmp CURRENT_ENTRY
     bne _runEntry
     jsr callFcart
@@ -186,7 +186,7 @@ checkProgram
     ldy #0
     ldx #0
 _loopAllowed
-    cpy #NUM_CHARS_ACCEPTED
+    cpy NUM_PROGS_FOUND
     beq _goOn
     tya
     asl
@@ -240,7 +240,7 @@ printAvailable
 
     ldy #0
 _loopAllowed
-    cpy #NUM_CHARS_ACCEPTED
+    cpy NUM_PROGS_FOUND
     beq _done
     cpy CURRENT_ENTRY
     bne _noHighlight
@@ -281,7 +281,7 @@ _done
     lda FCART_PRESENT
     beq _noFcart
     clc
-    lda #NUM_CHARS_ACCEPTED
+    lda NUM_PROGS_FOUND
     cmp CURRENT_ENTRY
     bne _l1
     #toRev
@@ -290,7 +290,7 @@ _l1
     #noRev
 _noFcart
     clc
-    lda #NUM_CHARS_ACCEPTED
+    lda NUM_PROGS_FOUND
     adc FCART_PRESENT
     cmp CURRENT_ENTRY
     bne _l2
