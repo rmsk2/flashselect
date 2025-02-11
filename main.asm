@@ -41,7 +41,6 @@ noRev .macro
     pla
 .endmacro
 
-FCART_PRESENT .byte 0
 CURRENT_ENTRY .byte 0
 
 main
@@ -56,11 +55,6 @@ main
     jsr txtio.clear    
 
     stz CURRENT_ENTRY
-    stz FCART_PRESENT
-    jsr checkFcart
-    bcc _notPresent
-    inc FCART_PRESENT
-_notPresent
     jsr printAvailable
 
 _restart
@@ -74,48 +68,81 @@ _restart
     rts
 
 
-Entry_t .struct  cmd, addr, txt, len
-    command  .byte \cmd
-    ref      .word \addr
-    text     .word \txt
-    textLen  .byte \len
-    reserved .fill 2
+Entry_t .struct  selKey, kup, klen, desc, descLen
+    selectionKey   .byte \selKey
+    kupName        .word \kup
+    kupLen         .byte \kLen
+    description    .word \desc
+    descriptionLen .byte \descLen
+    reserved       .fill 1
 .endstruct
 
-NUM_PROGS_FOUND .byte 4
 
-TXT_SNAKE .text "Snake: A simple clone of the game snake", $0d, $0d
-TXT_2048  .text "2048: The well known block shifting game", $0d, $0d
-TXT_15    .text "15 Puzzle: The original block shifting game", $0d, $0d
+TXT_SNAKE .text "A simple clone of the game snake", $0d, $0d
+TXT_2048  .text "The well known block shifting game", $0d, $0d
+TXT_15    .text "15 puzzle, the original block shifting game", $0d, $0d
 TXT_LIFE  .text "Conway's game of life", $0d, $0d
-TXT_FCART .text "f. fcart: Program to write data to the flash cartridge", $0d, $0d
+TXT_FCCART .text "Program to write data to the flash cartridge", $0d, $0d
+
 TXT_EXIT  .text "x. Exit to BASIC"
 
+SNAKE   .text "snake", $00
+F2048   .text "f256_2048", $00
+F15     .text "f256_15", $00
+LIFE    .text "f256_life", $00
+FCCART  .text "fccart", $00
+
+NULL .word 0
+
+NUM_PROGS_FOUND .byte 5
+
 REF_TABLE
-A .dstruct Entry_t, '1', SNAKE, TXT_SNAKE, len(TXT_SNAKE)
-B .dstruct Entry_t, '2', F2048, TXT_2048, len(TXT_2048)
-C .dstruct Entry_t, '3', F15, TXT_15, len(TXT_15)
-D .dstruct Entry_t, '4', LIFE, TXT_LIFE, len(TXT_LIFE)
+CB .dstruct Entry_t, '1', SNAKE, len(SNAKE)-1, TXT_SNAKE, len(TXT_SNAKE)
+A  .dstruct Entry_t, '2', F2048, len(F2048)-1, TXT_2048, len(TXT_2048)
+B  .dstruct Entry_t, '3', F15, len(F15)-1, TXT_15, len(TXT_15)
+C  .dstruct Entry_t, '4', LIFE, len(LIFE)-1, TXT_LIFE, len(TXT_LIFE)
+D  .dstruct Entry_t, '5', FCCART, len(FCCART)-1, TXT_FCCART, len(TXT_FCCART)
+E  .dstruct Entry_t, '6', NULL, 0, NULL, 0
+F  .dstruct Entry_t, '7', NULL, 0, NULL, 0
+G  .dstruct Entry_t, '9', NULL, 0, NULL, 0
+H  .dstruct Entry_t, 'a', NULL, 0, NULL, 0
+I  .dstruct Entry_t, 'b', NULL, 0, NULL, 0
+J  .dstruct Entry_t, 'c', NULL, 0, NULL, 0
+K  .dstruct Entry_t, 'd', NULL, 0, NULL, 0
+L  .dstruct Entry_t, 'e', NULL, 0, NULL, 0
+M  .dstruct Entry_t, 'g', NULL, 0, NULL, 0
+N  .dstruct Entry_t, 'h', NULL, 0, NULL, 0
+O  .dstruct Entry_t, 'i', NULL, 0, NULL, 0
+P  .dstruct Entry_t, 'j', NULL, 0, NULL, 0
+Q  .dstruct Entry_t, 'k', NULL, 0, NULL, 0
+R  .dstruct Entry_t, 'l', NULL, 0, NULL, 0
+S  .dstruct Entry_t, 'm', NULL, 0, NULL, 0
+T  .dstruct Entry_t, 'n', NULL, 0, NULL, 0
+U  .dstruct Entry_t, 'o', NULL, 0, NULL, 0
+V  .dstruct Entry_t, 'p', NULL, 0, NULL, 0
+W  .dstruct Entry_t, 'q', NULL, 0, NULL, 0
+AX .dstruct Entry_t, 'r', NULL, 0, NULL, 0
+AY .dstruct Entry_t, 's', NULL, 0, NULL, 0
+Z  .dstruct Entry_t, 't', NULL, 0, NULL, 0
+AA .dstruct Entry_t, 'u', NULL, 0, NULL, 0
+BX .dstruct Entry_t, 'r', NULL, 0, NULL, 0
+BY .dstruct Entry_t, 's', NULL, 0, NULL, 0
+BZ .dstruct Entry_t, 't', NULL, 0, NULL, 0
+BA .dstruct Entry_t, 'u', NULL, 0, NULL, 0
 
 
 processKeyEvent
     sta ASCII_TEMP
     cmp #'x'
-    bne _checkFcart
+    bne _checkCursor
     clc
     rts
-_checkFcart
-    jsr checkCallFcart
-    bcs _checkCursor
-    bra _goOn
 _checkCursor
     lda ASCII_TEMP
     cmp #CRSR_DOWN
-    bne _checkDown
+    bne _checkUp
     inc CURRENT_ENTRY
-    clc
     lda NUM_PROGS_FOUND
-    adc FCART_PRESENT
     ina
     cmp CURRENT_ENTRY
     bne _redraw
@@ -123,14 +150,12 @@ _checkCursor
 _redraw
     jsr printAvailable
     bra _goOn
-_checkDown
+_checkUp
     cmp #CRSR_UP
     bne _checkStart
     dec CURRENT_ENTRY
     bpl _redraw2
-    clc
     lda NUM_PROGS_FOUND
-    adc FCART_PRESENT
     sta CURRENT_ENTRY
 _redraw2
     jsr printAvailable
@@ -138,51 +163,30 @@ _redraw2
 _checkStart
     cmp #CARRIAGE_RETURN
     bne _checkCallProgram
-    clc
+    ; CR was pressed
+    ; check if it was pressed on last entry
     lda NUM_PROGS_FOUND
-    adc FCART_PRESENT
     cmp CURRENT_ENTRY
     bne _notExit
+    ; Return was pressed on the last entry which
+    ; is used for exit
     clc 
     rts
 _notExit
-    lda FCART_PRESENT
-    beq _runEntry
-    lda NUM_PROGS_FOUND
-    cmp CURRENT_ENTRY
-    bne _runEntry
-    jsr callFcart
-    bra _goOn
-_runEntry
     jsr runEntry
     bra _goOn
 _checkCallProgram
-    jsr checkProgram
+    ; a normal key was pressed. Test if this keys belongs to a
+    ; KUP.
+    jsr checkForAndStartProgram
 _goOn
     sec
     rts
-    
 
 
-checkCallFcart
-    lda FCART_PRESENT
-    beq endNotFound
-    lda ASCII_TEMP
-    cmp #'f'
-    bne endNotFound
-callFcart
-    #load16BitImmediate FCCART, kernel.args.buf
-    jsr kernel.RunNamed
-    #load16BitImmediate FCART, kernel.args.buf
-    jsr kernel.RunNamed
-    clc
-    rts
-endNotFound
-    sec
-    rts
-
-
-checkProgram   
+; Check if the value in ASCII_TEMP is the selection key of a program. If it is
+; start the program
+checkForAndStartProgram
     ldy #0
     ldx #0
 _loopAllowed
@@ -253,7 +257,7 @@ _noHighlight
     asl
     sta STRUCT_INDEX
     clc
-    adc #Entry_t.command
+    adc #Entry_t.selectionKey
     tax
     lda REF_TABLE, x
     jsr txtio.charOut
@@ -261,9 +265,28 @@ _noHighlight
     jsr txtio.charOut
     lda #' '
     jsr txtio.charOut
+
     lda STRUCT_INDEX
     clc
-    adc #Entry_t.text
+    adc #Entry_t.kupName
+    tax
+    lda REF_TABLE, x
+    sta TXT_PTR3
+    inx
+    lda REF_TABLE, x
+    sta TXT_PTR3 + 1
+    inx
+    lda REF_TABLE, x
+    jsr txtio.printStr
+
+    lda #':'
+    jsr txtio.charOut
+    lda #' '
+    jsr txtio.charOut
+
+    lda STRUCT_INDEX
+    clc
+    adc #Entry_t.description
     tax
     lda REF_TABLE, x
     sta TXT_PTR3
@@ -278,20 +301,7 @@ _noHighlight
     iny
     bra _loopAllowed
 _done
-    lda FCART_PRESENT
-    beq _noFcart
-    clc
     lda NUM_PROGS_FOUND
-    cmp CURRENT_ENTRY
-    bne _l1
-    #toRev
-_l1
-    #printString TXT_FCART, len(TXT_FCART)
-    #noRev
-_noFcart
-    clc
-    lda NUM_PROGS_FOUND
-    adc FCART_PRESENT
     cmp CURRENT_ENTRY
     bne _l2
     #toRev
@@ -327,42 +337,37 @@ _found
 
 
 ; carry is set if the last block of the cartridge contains fcart, else carry is clear.
-MMU_TEMP .byte 0
-checkFcart
-    lda 13
-    sta MMU_TEMP
-    lda #$80+$1f
-    sta 13
+; MMU_TEMP .byte 0
+; checkFcart
+;     lda 13
+;     sta MMU_TEMP
+;     lda #$80+$1f
+;     sta 13
     
-    ; Check for KUP signature
-    lda $A000
-    cmp #$F2
-    bne _notFound
+;     ; Check for KUP signature
+;     lda $A000
+;     cmp #$F2
+;     bne _notFound
 
-    lda $A001
-    cmp #$56
-    bne _notFound
+;     lda $A001
+;     cmp #$56
+;     bne _notFound
 
-    #load16BitImmediate FCCART, MEM_PTR1
-    #load16BitImmediate $A00A, MEM_PTR2
-    jsr strCmp
-    bcs _restoreMMU
+;     #load16BitImmediate FCCART, MEM_PTR1
+;     #load16BitImmediate $A00A, MEM_PTR2
+;     jsr strCmp
+;     bcs _restoreMMU
 
-    #load16BitImmediate FCART, MEM_PTR1
-    #load16BitImmediate $A00A, MEM_PTR2
-    jsr strCmp
-    bcs _restoreMMU
-_notFound    
-    clc
-_restoreMMU
-    lda MMU_TEMP
-    sta 13
-    rts
+;     #load16BitImmediate FCART, MEM_PTR1
+;     #load16BitImmediate $A00A, MEM_PTR2
+;     jsr strCmp
+;     bcs _restoreMMU
+; _notFound    
+;     clc
+; _restoreMMU
+;     lda MMU_TEMP
+;     sta 13
+;     rts
 
 
-SNAKE   .text "snake", $00
-F2048   .text "f256_2048", $00
-F15     .text "f256_15", $00
-LIFE    .text "f256_life", $00
-FCART   .text "fcart", $00
-FCCART  .text "fccart", $00
+
