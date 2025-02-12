@@ -46,9 +46,12 @@ CURRENT_ENTRY .byte 0
 main
     jsr setup.mmu
     jsr clut.init
-    jsr initEvents
     jsr txtio.init80x60
     ;jsr txtio.cursorOn
+
+    jsr discoverContents
+    beq _toBasic
+    jsr initEvents
 
     lda #$10
     sta CURSOR_STATE.col 
@@ -62,6 +65,7 @@ _restart
     #load16BitImmediate processKeyEvent, keyrepeat.FOCUS_VECTOR
     jsr keyrepeat.keyEventLoop
 
+_toBasic
     jsr exitToBasic
     ; I guess we never get here ....
     jsr sys64738
@@ -78,30 +82,18 @@ Entry_t .struct  selKey, kup, klen, desc, descLen
 .endstruct
 
 
-TXT_SNAKE .text "A simple clone of the game snake", $0d, $0d
-TXT_2048  .text "The well known block shifting game", $0d, $0d
-TXT_15    .text "15 puzzle, the original block shifting game", $0d, $0d
-TXT_LIFE  .text "Conway's game of life", $0d, $0d
-TXT_FCCART .text "Program to write data to the flash cartridge", $0d, $0d
-
 TXT_EXIT  .text "x. Exit to BASIC"
-
-SNAKE   .text "snake", $00
-F2048   .text "f256_2048", $00
-F15     .text "f256_15", $00
-LIFE    .text "f256_life", $00
-FCCART  .text "fccart", $00
 
 NULL .word 0
 
-NUM_PROGS_FOUND .byte 5
+NUM_PROGS_FOUND .byte 0
 
 REF_TABLE
-CB .dstruct Entry_t, '1', SNAKE, len(SNAKE)-1, TXT_SNAKE, len(TXT_SNAKE)
-A  .dstruct Entry_t, '2', F2048, len(F2048)-1, TXT_2048, len(TXT_2048)
-B  .dstruct Entry_t, '3', F15, len(F15)-1, TXT_15, len(TXT_15)
-C  .dstruct Entry_t, '4', LIFE, len(LIFE)-1, TXT_LIFE, len(TXT_LIFE)
-D  .dstruct Entry_t, '5', FCCART, len(FCCART)-1, TXT_FCCART, len(TXT_FCCART)
+CB .dstruct Entry_t, '1', NULL, 0, NULL, 0
+A  .dstruct Entry_t, '2', NULL, 0, NULL, 0
+B  .dstruct Entry_t, '3', NULL, 0, NULL, 0
+C  .dstruct Entry_t, '4', NULL, 0, NULL, 0
+D  .dstruct Entry_t, '5', NULL, 0, NULL, 0
 E  .dstruct Entry_t, '6', NULL, 0, NULL, 0
 F  .dstruct Entry_t, '7', NULL, 0, NULL, 0
 G  .dstruct Entry_t, '9', NULL, 0, NULL, 0
@@ -129,6 +121,117 @@ BX .dstruct Entry_t, 'r', NULL, 0, NULL, 0
 BY .dstruct Entry_t, 's', NULL, 0, NULL, 0
 BZ .dstruct Entry_t, 't', NULL, 0, NULL, 0
 BA .dstruct Entry_t, 'u', NULL, 0, NULL, 0
+
+MMU_TEMP .byte 0
+CURRENT_BLOCK .byte 0
+PROG_LEN .byte 0
+
+discoverContents
+    #load16BitImmediate STR_DATA, MEM_PTR2
+    stz NUM_PROGS_FOUND
+
+    ldx #$FF
+    ldy #0
+    sty PROG_LEN
+
+    lda 13
+    sta MMU_TEMP
+
+    ldy #0
+    lda #$81
+    sta CURRENT_BLOCK
+_blockLoop
+    cpy #32
+    beq _restoreMMU
+
+    lda PROG_LEN
+    beq _lookAtBlock
+    dec PROG_LEN
+    lda PROG_LEN
+    beq _lookAtBlock
+    bra _nextBlock
+
+_lookAtBlock
+    lda CURRENT_BLOCK
+    sta 13
+
+    lda $A000
+    cmp #$F2
+    bne _nextBlock
+
+    lda $A001
+    cmp #$56
+    bne _nextBlock
+
+    inx
+    jsr copyNameAndInfo
+    lda $A002
+    sta PROG_LEN
+
+_nextBlock
+    iny
+    inc CURRENT_BLOCK
+    bra _blockLoop
+
+_restoreMMU
+    lda MMU_TEMP
+    sta 13
+
+    inx
+    stx NUM_PROGS_FOUND
+    lda NUM_PROGS_FOUND
+
+    rts
+
+
+FOUND_TEMP .byte 0
+copyNameAndInfo
+    phx
+    phy
+    stx FOUND_TEMP
+
+    ; set MEM_PTR3 to REF_TABLE entry
+    txa
+    asl
+    asl
+    asl
+    clc
+    adc #<REF_TABLE
+    sta MEM_PTR3
+    lda #0
+    adc #>REF_TABLE
+    sta MEM_PTR3+1
+
+    #load16BitImmediate $A00A, MEM_PTR1
+
+    ldy #Entry_t.kupName
+    lda MEM_PTR2
+    sta (MEM_PTR3), y
+    iny
+    lda MEM_PTR2+1
+    sta (MEM_PTR3), y
+
+    jsr strCopy
+    ldy #Entry_t.kupLen
+    sta (MEM_PTR3), y
+
+    jsr strSkip
+
+    ldy #Entry_t.description
+    lda MEM_PTR2
+    sta (MEM_PTR3), y
+    iny
+    lda MEM_PTR2+1
+    sta (MEM_PTR3), y
+
+    jsr strCopy
+    ldy #Entry_t.descriptionLen
+    sta (MEM_PTR3), y
+
+    ply
+    plx
+
+    rts
 
 
 processKeyEvent
@@ -176,7 +279,7 @@ _notExit
     jsr runEntry
     bra _goOn
 _checkCallProgram
-    ; a normal key was pressed. Test if this keys belongs to a
+    ; a normal key was pressed. Test if this key belongs to a
     ; KUP.
     jsr checkForAndStartProgram
 _goOn
@@ -232,6 +335,7 @@ _special
 
 
 STRUCT_INDEX .byte 0
+DESC_LEN .byte 0
 printAvailable
     jsr txtio.home
     #printString TXT_STARS, len(TXT_STARS)
@@ -245,7 +349,9 @@ printAvailable
     ldy #0
 _loopAllowed
     cpy NUM_PROGS_FOUND
-    beq _done
+    bne _next
+    jmp _done
+_next
     cpy CURRENT_ENTRY
     bne _noHighlight
     #toRev
@@ -279,6 +385,14 @@ _noHighlight
     lda REF_TABLE, x
     jsr txtio.printStr
 
+    lda STRUCT_INDEX
+    clc
+    adc #Entry_t.descriptionLen
+    tax
+    lda REF_TABLE, x
+    sta DESC_LEN
+    beq _skipDesc
+
     lda #':'
     jsr txtio.charOut
     lda #' '
@@ -293,13 +407,15 @@ _noHighlight
     inx
     lda REF_TABLE, x
     sta TXT_PTR3 + 1
-    inx
-    lda REF_TABLE, x
+    lda DESC_LEN
     jsr txtio.printStr
+_skipDesc
+    jsr txtio.newLine
+    jsr txtio.newLine
     #noRev
     ply
     iny
-    bra _loopAllowed
+    jmp _loopAllowed
 _done
     lda NUM_PROGS_FOUND
     cmp CURRENT_ENTRY
@@ -315,59 +431,63 @@ _l2
     #printString TXT_SEL_INFO2, len(TXT_SEL_INFO2)
     rts
 
-; carry is set if strings are equal. String 1 in MEM_PTR1, the other has to
-; be in MEM_PTR2.
-strCmp
+
+; String in MEM_PTR1. MEM_PTR1 is set to first byte after
+; the string.
+strSkip
     ldy #0
 _loop
     lda (MEM_PTR1), y
-    cmp (MEM_PTR2), y
-    bne _notFound
-    cmp #0
-    beq _found
+    beq _done
     iny
-    beq _notFound
     bra _loop
-_notFound
+_done
+    iny
+    tya
     clc
+    adc MEM_PTR1
+    sta MEM_PTR1
+    lda #0
+    adc MEM_PTR1 + 1
+    sta MEM_PTR1 + 1
     rts
-_found
-    sec
+
+
+LEN_TEMP .byte 0
+; String in MEM_PTR1, target in MEM_PTR2. MEM_PTR2 is moved to next free byte.
+; MEM_PTR1 is moved to next string. accu contains length of string.
+strCopy
+    ldy #0
+_loop
+    lda (MEM_PTR1), y
+    sta (MEM_PTR2), y
+    beq _done
+    iny
+    bra _loop
+_done
+    sty LEN_TEMP
+    iny
+
+    tya
+    clc
+    adc MEM_PTR2
+    sta MEM_PTR2
+    lda #0
+    adc MEM_PTR2 + 1
+    sta MEM_PTR2 + 1
+
+    tya
+    clc
+    adc MEM_PTR1
+    sta MEM_PTR1
+    lda #0
+    adc MEM_PTR1 + 1
+    sta MEM_PTR1 + 1
+
+    lda LEN_TEMP
+
     rts
 
 
-; carry is set if the last block of the cartridge contains fcart, else carry is clear.
-; MMU_TEMP .byte 0
-; checkFcart
-;     lda 13
-;     sta MMU_TEMP
-;     lda #$80+$1f
-;     sta 13
-    
-;     ; Check for KUP signature
-;     lda $A000
-;     cmp #$F2
-;     bne _notFound
-
-;     lda $A001
-;     cmp #$56
-;     bne _notFound
-
-;     #load16BitImmediate FCCART, MEM_PTR1
-;     #load16BitImmediate $A00A, MEM_PTR2
-;     jsr strCmp
-;     bcs _restoreMMU
-
-;     #load16BitImmediate FCART, MEM_PTR1
-;     #load16BitImmediate $A00A, MEM_PTR2
-;     jsr strCmp
-;     bcs _restoreMMU
-; _notFound    
-;     clc
-; _restoreMMU
-;     lda MMU_TEMP
-;     sta 13
-;     rts
-
-
+STR_DATA .byte ?
 
