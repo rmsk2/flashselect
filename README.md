@@ -9,9 +9,9 @@ allows to exit `flashselect`and restart SuperBASIC. When using `lsf` in DOS `fla
 
 Use `make` to build a binary called `loader.bin` which can be written to block 0 of the flash cartridge via 
 [`fcart`](https://github.com/rmsk2/cartflash). Alternatively you can build `selector.pgz` via `make pgz`. This is mainly
-intended for development purposes, i.e. you can test new functionality  without waring out the flash memory in the
+intended for development purposes, i.e. you can test new functionality  without wearing out the flash memory in the
 cart.
 
 ## Binary distribution
 
-In the release section you will find prebuilt versions of `laoder.bin` and `selector.pgz`.
+In the release section you will find prebuilt versions of `loader.bin` and `selector.pgz`.
