@@ -16,11 +16,9 @@ jmp main
 .include "khelp.asm"
 .include "key_repeat.asm"
 
-TXT_AST         .text "****                                        ****", $0d
-TXT_MSG         .text "**** Select program to start from cartridge ****", $0d
-TXT_STARS       .text "************************************************", $0d
-TXT_SELECT_INFO .text "Start entry by typing the corresponding character or select", $0d
-TXT_SEL_INFO2   .text "entry with cursor keys and press return to start it"
+TXT_MSG         .text "                   Select program to start from cartridge                       "
+TXT_SELECT_INFO .text "           Start entry by typing the corresponding character or select          "
+TXT_SEL_INFO2   .text "               entry with cursor keys and press return to start it              "
 
 COL = $10 
 REV_COL = $01
@@ -43,9 +41,62 @@ noRev .macro
 
 CURRENT_ENTRY .byte 0
 
+UPPER_LINE  .fill 80
+LOWER_LINE  .fill 80
+MIDDLE_LINE .fill 80
+NORMAL_LINE .fill 80
+
+makeStr .macro addr, val
+    lda #\val
+    ldx #0
+_loop1
+    sta \addr, x
+    inx
+    cpx #80
+    bne _loop1
+.endmacro
+
+
+prepareStrings
+    #makeStr UPPER_LINE, 173
+    #makeStr LOWER_LINE, 173
+    #makeStr MIDDLE_LINE, 173
+    #makeStr NORMAL_LINE, ' '
+
+    lda #169
+    sta UPPER_LINE
+    lda #170
+    sta UPPER_LINE + 79
+
+    lda #171
+    sta LOWER_LINE
+    lda #172
+    sta LOWER_LINE +  79
+
+    lda #164
+    sta MIDDLE_LINE
+    lda #168
+    sta MIDDLE_LINE + 79
+
+    lda #174
+    sta NORMAL_LINE
+    sta NORMAL_LINE + 79
+
+    lda #174
+    sta TXT_SELECT_INFO
+    sta TXT_SELECT_INFO + 79
+    sta TXT_SEL_INFO2
+    sta TXT_SEL_INFO2 + 79
+    sta TXT_MSG
+    sta TXT_MSG + 79
+
+    rts
+
+
 main
     jsr setup.mmu
     jsr clut.init
+    jsr prepareStrings
     jsr txtio.init80x60
     ;jsr txtio.cursorOn
 
@@ -334,29 +385,70 @@ _special
     rts
 
 
-STRUCT_INDEX .byte 0
-DESC_LEN .byte 0
-printAvailable
-    jsr txtio.home
-    #printString TXT_STARS, len(TXT_STARS)
-    #printString TXT_AST, len(TXT_AST)
-    #printString TXT_MSG, len(TXT_MSG)
-    #printString TXT_AST, len(TXT_AST)
-    #printString TXT_STARS, len(TXT_STARS)
-    jsr txtio.newLine
-    jsr txtio.newLine
+moveToEnd
+    lda #79
+    sta CURSOR_STATE.xPos
+    jsr txtio.cursorSet
+    rts
 
-    ldy #0
-_loopAllowed
-    cpy NUM_PROGS_FOUND
-    bne _next
-    jmp _done
-_next
-    cpy CURRENT_ENTRY
-    bne _noHighlight
-    #toRev
-_noHighlight    
+
+L_ARROW    .text 174, " ", 151, "> "
+L_BLANKS   .text 174,"    "
+R_ARROW    .text " <", 151, " "
+R_BLANKS   .text "    "
+
+printLineStart
     phy
+    ldy DO_HIGHLIGHT
+    bne _arrow
+    #printString L_BLANKS, len(L_BLANKS)
+    bra _endArrow
+_arrow
+    #printString L_ARROW, len(L_ARROW)
+_endArrow
+    ply
+    rts
+
+
+printLineEnd
+    ldy DO_HIGHLIGHT
+    bne _arrow
+    #printString R_BLANKS, len(R_BLANKS)
+    bra _endArrow
+_arrow
+    #printString R_ARROW, len(R_ARROW)
+_endArrow
+    jsr moveToEnd
+    lda #174
+    jsr txtio.charOut
+    rts
+
+
+printHeader
+    jsr txtio.home
+    #printString UPPER_LINE, 80
+    #printString NORMAL_LINE, 80
+    #printString TXT_MSG, len(TXT_MSG)
+    #printString NORMAL_LINE, 80
+    #printString MIDDLE_LINE, 80
+    #printString NORMAL_LINE, 80
+    rts
+
+
+printFooter
+    #printString NORMAL_LINE, 80
+    #printString MIDDLE_LINE, 80
+    #printString NORMAL_LINE, 80
+    #printString TXT_SELECT_INFO, len(TXT_SELECT_INFO)
+    #printString TXT_SEL_INFO2, len(TXT_SEL_INFO2)
+    #printString NORMAL_LINE, 80
+    #printString LOWER_LINE, 80
+    rts
+
+
+; y-reg has to contain number of entry
+printEntryLine
+    jsr printLineStart
     tya
     asl
     asl
@@ -366,6 +458,10 @@ _noHighlight
     adc #Entry_t.selectionKey
     tax
     lda REF_TABLE, x
+    ldy DO_HIGHLIGHT
+    beq _noReverse
+    #toRev
+_noReverse
     jsr txtio.charOut
     lda #'.'
     jsr txtio.charOut
@@ -410,25 +506,55 @@ _noHighlight
     lda DESC_LEN
     jsr txtio.printStr
 _skipDesc
-    jsr txtio.newLine
-    jsr txtio.newLine
     #noRev
-    ply
-    iny
-    jmp _loopAllowed
-_done
-    lda NUM_PROGS_FOUND
-    cmp CURRENT_ENTRY
-    bne _l2
+    jsr printLineEnd
+    #printString NORMAL_LINE, 80
+    rts
+
+
+printExitLine
+    jsr printLineStart
+    lda DO_HIGHLIGHT
+    beq _noReverse2
     #toRev
-_l2
+_noReverse2    
     #printString TXT_EXIT, len(TXT_EXIT)
     #noRev
-    jsr txtio.newLine
-    jsr txtio.newLine
-    jsr txtio.newLine
-    #printString TXT_SELECT_INFO, len(TXT_SELECT_INFO)
-    #printString TXT_SEL_INFO2, len(TXT_SEL_INFO2)
+    jsr printLineEnd
+    rts
+
+
+; y-reg has to contain number of entry
+testHighlight
+    stz DO_HIGHLIGHT
+    cpy CURRENT_ENTRY
+    bne _noHighlight
+    inc DO_HIGHLIGHT
+_noHighlight    
+    rts
+
+
+DO_HIGHLIGHT .byte 0
+STRUCT_INDEX .byte 0
+DESC_LEN .byte 0
+printAvailable
+    jsr printHeader
+    ldy #0
+_loopAllowed
+    cpy NUM_PROGS_FOUND
+    bne _next
+    bra _done
+_next
+    jsr testHighlight
+    phy
+    jsr printEntryLine
+    ply
+    iny
+    bra _loopAllowed
+_done
+    jsr testHighlight
+    jsr printExitLine
+    jsr printFooter
     rts
 
 
