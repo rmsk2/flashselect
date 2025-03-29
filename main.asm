@@ -446,6 +446,31 @@ printFooter
     rts
 
 
+
+HELP_LEN .word 0
+ORG_LEN  .byte 0
+TEMP     .byte len(R_ARROW) + 1
+SCR_MAX  .word 80
+calcProperDescLen
+    sta ORG_LEN
+    sta HELP_LEN
+    stz HELP_LEN + 1
+    #add16BitByte CURSOR_STATE.xPos, HELP_LEN
+    #add16BitByte TEMP, HELP_LEN
+    #cmp16BitImmediate 80, HELP_LEN
+    bcs _noCorrection
+    #load16BitImmediate 80, SCR_MAX
+    #load16BitImmediate len(R_ARROW) + 1, HELP_LEN
+    #add16BitByte CURSOR_STATE.xPos, HELP_LEN
+    #sub16Bit HELP_LEN, SCR_MAX
+    lda SCR_MAX
+    bra _returnCorrectedLength
+_noCorrection
+    lda ORG_LEN
+_returnCorrectedLength
+    rts
+
+
 ; y-reg has to contain number of entry
 printEntryLine
     jsr printLineStart
@@ -468,6 +493,7 @@ _noReverse
     lda #' '
     jsr txtio.charOut
 
+    ; load address of program name
     lda STRUCT_INDEX
     clc
     adc #Entry_t.kupName
@@ -478,9 +504,11 @@ _noReverse
     lda REF_TABLE, x
     sta TXT_PTR3 + 1
     inx
+    ; load length of program name
     lda REF_TABLE, x
     jsr txtio.printStr
 
+    ; load length of description
     lda STRUCT_INDEX
     clc
     adc #Entry_t.descriptionLen
@@ -494,6 +522,7 @@ _noReverse
     lda #' '
     jsr txtio.charOut
 
+    ; load address of description
     lda STRUCT_INDEX
     clc
     adc #Entry_t.description
@@ -503,7 +532,9 @@ _noReverse
     inx
     lda REF_TABLE, x
     sta TXT_PTR3 + 1
+    ; test if the description fits on the screen
     lda DESC_LEN
+    jsr calcProperDescLen
     jsr txtio.printStr
 _skipDesc
     #noRev
