@@ -147,6 +147,7 @@ C  .dstruct Entry_t, '4', NULL, 0, NULL, 0
 D  .dstruct Entry_t, '5', NULL, 0, NULL, 0
 E  .dstruct Entry_t, '6', NULL, 0, NULL, 0
 F  .dstruct Entry_t, '7', NULL, 0, NULL, 0
+BA .dstruct Entry_t, '8', NULL, 0, NULL, 0
 G  .dstruct Entry_t, '9', NULL, 0, NULL, 0
 H  .dstruct Entry_t, 'a', NULL, 0, NULL, 0
 I  .dstruct Entry_t, 'b', NULL, 0, NULL, 0
@@ -168,10 +169,9 @@ AX .dstruct Entry_t, 'r', NULL, 0, NULL, 0
 AY .dstruct Entry_t, 's', NULL, 0, NULL, 0
 Z  .dstruct Entry_t, 't', NULL, 0, NULL, 0
 AA .dstruct Entry_t, 'u', NULL, 0, NULL, 0
-BX .dstruct Entry_t, 'r', NULL, 0, NULL, 0
-BY .dstruct Entry_t, 's', NULL, 0, NULL, 0
-BZ .dstruct Entry_t, 't', NULL, 0, NULL, 0
-BA .dstruct Entry_t, 'u', NULL, 0, NULL, 0
+BX .dstruct Entry_t, 'v', NULL, 0, NULL, 0
+BY .dstruct Entry_t, 'w', NULL, 0, NULL, 0
+BZ .dstruct Entry_t, 'x', NULL, 0, NULL, 0
 
 MMU_TEMP .byte 0
 CURRENT_BLOCK .byte 0
