@@ -171,7 +171,7 @@ Z  .dstruct Entry_t, 't', NULL, 0, NULL, 0
 AA .dstruct Entry_t, 'u', NULL, 0, NULL, 0
 BX .dstruct Entry_t, 'v', NULL, 0, NULL, 0
 BY .dstruct Entry_t, 'w', NULL, 0, NULL, 0
-BZ .dstruct Entry_t, 'x', NULL, 0, NULL, 0
+BZ .dstruct Entry_t, 'y', NULL, 0, NULL, 0
 
 MMU_TEMP .byte 0
 CURRENT_BLOCK .byte 0
