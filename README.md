@@ -4,6 +4,8 @@
 from which each of the detected programs can be started. `flashselect` is intended to be stored in the first
 block of the flash cartridge which guarantees that it is started at reboot or after a reset. The last menu entry
 allows to exit `flashselect`and restart SuperBASIC. When using `lsf` in DOS `flashselect` is shown as `selector`.
+If `flashselect` detects no other KUP on the cartridge it simply starts `xdev` which in turn runs whatever is
+stored in onboard flash block 2. On a system using the default flash layout this means that SuperBASIC is started.
 
 ## Bulding the program
 
