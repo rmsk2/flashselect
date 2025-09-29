@@ -1,4 +1,4 @@
-name: Release (Tag-Based)
+name: Publish binary
 on:
   push:
     tags:
@@ -16,3 +16,22 @@ jobs:
       - name: Build Binary
         run: |
           make
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: loader.bin
+          path: ./
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./loader.bin
+          tag_name: ${{ github.ref_name }}
+          body: "Automated release of ${{ github.ref_name }}."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
