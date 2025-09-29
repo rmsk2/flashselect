@@ -13,7 +13,7 @@ jobs:
       - name: Set up 64 tass on Ubuntu
         run: |
           sudo apt-get install 64tass
-      - name: Build Binary
+      - name: Build Binaries
         run: |
           make
           make pgz
@@ -24,6 +24,4 @@ jobs:
             loader.bin
             selector.pgz
           tag_name: ${{ github.ref_name }}
-          body: "Automated release of ${{ github.ref_name }}."
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
+          body: "Automated release of ${{ github.ref_name }}."       
