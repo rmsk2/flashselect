@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up 64 tass on Ubuntu
         run: |
-          apt-get install 64tass
+          sudo apt-get install 64tass
       - name: Build Binary
         run: |
           make
