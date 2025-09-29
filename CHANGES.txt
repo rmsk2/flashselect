@@ -1,0 +1,2 @@
+- Add creating releases via GitHub action
+- Version 1.2.4
