@@ -1,0 +1,17 @@
+name: Release (Tag-Based)
+on:
+  push:
+    tags:
+      - "v*"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Set up 64 tass on Ubuntu
+        run: |
+          apt-get install 64tass
+      - name: Build Binary
+        run: |
+          make
