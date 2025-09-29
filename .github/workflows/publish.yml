@@ -24,4 +24,5 @@ jobs:
             loader.bin
             selector.pgz
           tag_name: ${{ github.ref_name }}
-          body: "Automated release of ${{ github.ref_name }}."       
+          body: "Automated release of ${{ github.ref_name }}."
+          token: ${{ secrets.PUBLISH_TOKEN }}
