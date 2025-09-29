@@ -16,7 +16,7 @@ jmp main
 .include "khelp.asm"
 .include "key_repeat.asm"
 
-TXT_MSG          .text "                 Select program to start from cartridge (v1.2.6)                "
+TXT_MSG          .text "                 Select program to start from cartridge (v1.2.8)                "
 TXT_SELECT_INFO  .text "           Start entry by typing the corresponding character or select          "
 TXT_SEL_INFO2    .text "               entry with cursor keys and press return to start it              "
 TXT_NO_KUP_FOUND .text "              Only loader found on cartridge. Press any key to exit.            "

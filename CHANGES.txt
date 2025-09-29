@@ -1,1 +1,1 @@
-- Show info message when no KUP was found
+- Snyc version numbers
