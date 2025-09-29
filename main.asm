@@ -16,9 +16,10 @@ jmp main
 .include "khelp.asm"
 .include "key_repeat.asm"
 
-TXT_MSG         .text "                 Select program to start from cartridge (v1.2.3)                "
-TXT_SELECT_INFO .text "           Start entry by typing the corresponding character or select          "
-TXT_SEL_INFO2   .text "               entry with cursor keys and press return to start it              "
+TXT_MSG          .text "                 Select program to start from cartridge (v1.2.6)                "
+TXT_SELECT_INFO  .text "           Start entry by typing the corresponding character or select          "
+TXT_SEL_INFO2    .text "               entry with cursor keys and press return to start it              "
+TXT_NO_KUP_FOUND .text "              Only loader found on cartridge. Press any key to exit.            "
 
 COL = $10 
 REV_COL = $01
@@ -89,6 +90,8 @@ prepareStrings
     sta TXT_SEL_INFO2 + 79
     sta TXT_MSG
     sta TXT_MSG + 79
+    sta TXT_NO_KUP_FOUND
+    sta TXT_NO_KUP_FOUND + 79
 
     rts
 
@@ -100,14 +103,22 @@ main
     jsr txtio.init80x60
     ;jsr txtio.cursorOn
 
-    jsr discoverContents
-    beq _toBasic
-    jsr initEvents
-
     lda #$10
     sta CURSOR_STATE.col 
-    jsr txtio.clear    
+    jsr txtio.clear
+    jsr initEvents
 
+    jsr discoverContents
+    bne _otherKUPFound
+
+    jsr printHeader
+    #printString TXT_NO_KUP_FOUND, len(TXT_NO_KUP_FOUND)
+    #printString NORMAL_LINE, 80
+    #printString LOWER_LINE, 80
+    jsr waitForKey
+    bra _toBasic
+
+_otherKUPFound
     stz CURRENT_ENTRY
     jsr printAvailable
 
